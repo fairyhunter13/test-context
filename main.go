@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
@@ -13,10 +12,14 @@ const (
 	timeOut = 999
 )
 
+var (
+	globalCounter = 0
+)
+
 func main() {
 	// mapNotConcurrent()
 	// loopCounterCase()
-	sharedVariable()
+	// counterNotWrightCase()
 }
 
 func mapNotConcurrent() {
@@ -30,12 +33,14 @@ func mapNotConcurrent() {
 	// time.Sleep(1 * time.Nanosecond)
 	m["1"] = "c"
 	<-c
+	fmt.Println("==========This is the nonconcurrent map section!==========")
 	for k, v := range m {
-		fmt.Printf("The key %s and value: %s", k, v)
+		fmt.Printf("The key %s and value: %s\n", k, v)
 	}
 }
 
 func loopCounterCase() {
+	fmt.Println("==========This is the loop counter section!==========")
 	var wg sync.WaitGroup
 	wg.Add(5)
 	for i := 0; i < 5; i++ {
@@ -47,42 +52,20 @@ func loopCounterCase() {
 	wg.Wait()
 }
 
-func sharedVariable() {
-	errorChannel := ParallelWrite([]byte("Test"))
-	for err := range errorChannel {
-		if err != nil {
-			fmt.Printf("There is an error! Error: %s", err)
+func counterNotWrightCase() {
+	fmt.Println("==========This is the loop counter section!==========")
+	done := make(chan bool)
+	go func() {
+		for i := 1; i <= 1000; i++ {
+			go func() {
+				globalCounter++
+			}()
 		}
-	}
-}
+		done <- true
+	}()
+	<-done
+	fmt.Printf("The global counter is %d\n", globalCounter)
 
-// ParallelWrite writes data to file1 and file2, returns the errors.
-func ParallelWrite(data []byte) chan error {
-	res := make(chan error, 2)
-	defer close(res)
-	f1, err := os.Create("file1")
-	if err != nil {
-		res <- err
-	} else {
-		go func() {
-			// This err is shared with the main goroutine,
-			// so the write races with the write below.
-			_, err = f1.Write(data)
-			res <- err
-			f1.Close()
-		}()
-	}
-	f2, err := os.Create("file2") // The second conflicting write to err.
-	if err != nil {
-		res <- err
-	} else {
-		go func() {
-			_, err = f2.Write(data)
-			res <- err
-			f2.Close()
-		}()
-	}
-	return res
 }
 
 /* This section is only for context. */
