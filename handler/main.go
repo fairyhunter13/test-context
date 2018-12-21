@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const timeout = 5
+const timeout = 500
 
 func main() {
 	http.HandleFunc("/thanos", thanosHandler)
@@ -18,11 +18,11 @@ func main() {
 func thanosHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*timeout)
 		defer cancel()
 
 		go func() {
-			time.Sleep(5 * time.Second)
+			time.Sleep(timeout * time.Millisecond)
 			w.Write([]byte("Done doing work!"))
 		}()
 
